@@ -1,0 +1,71 @@
+#!/usr/bin/python
+
+from optparse import OptionParser
+import sys
+
+def safelen(val):
+    if isinstance(val, basestring):
+        return len(val)
+    return len(str(val))
+
+def print_aligned_table(table):
+    """Prints a list of lists, aligning the columns."""
+    # compute maximum field length for each column
+    num_cols = None
+    max_lens = None
+    for row in table:
+        if num_cols is None:
+            num_cols = len(row)
+            max_lens = [0] * num_cols
+        else:
+            assert len(row) == num_cols
+
+        for i in xrange(num_cols):
+            max_lens[i] = max(max_lens[i], safelen(row[i]))
+
+    # gross
+    format_string = ' '.join(['%-*s'] * num_cols)
+    format_params = [None] * (2 * num_cols)
+    for row in table:
+        for i in xrange(num_cols):
+            format_params[2*i] = max_lens[i]
+            format_params[2*i + 1] = row[i]
+        print (format_string % tuple(format_params)).encode('utf-8')
+
+def percentile(sorted_vals, tile):
+    return sorted_vals[int(len(sorted_vals) * tile / 100.0)]
+
+def main():
+    parser = OptionParser(usage="%prog")
+    _options, _args = parser.parse_args()
+
+    data_array = None
+    for line in sys.stdin:
+        numbers = [float(piece) for piece in line.split()]
+        if data_array is None:
+            data_array = [list() for _ in numbers]
+        for i in xrange(len(numbers)):
+            data_array[i].append(numbers[i])
+
+    if data_array is None:
+        return
+
+    for values in data_array:
+        stats = []
+
+        values.sort()
+        stats.append(("Count:", len(values)))
+        if len(values) != 0:
+            stats.append(("Mean:", sum(values) / float(len(values))))
+            stats.append(("Min:", values[0]))
+            stats.append(("25th: ", percentile(values, 25)))
+            stats.append(("50th: ", percentile(values, 50)))
+            stats.append(("75th: ", percentile(values, 75)))
+            stats.append(("99th: ", percentile(values, 99)))
+            stats.append(("Max:", values[-1]))
+
+        print_aligned_table(stats)
+        print
+
+if __name__ == '__main__':
+    sys.exit(main())

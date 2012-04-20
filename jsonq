@@ -47,6 +47,11 @@ def parse_queries(query_strs):
     # dictionary key. The second element " " " ", is an array index.
     queries = []
     for query_s in query_strs:
+        # detect fake queries:
+        if query_s[0] not in ('.', '['):
+            queries.append(query_s)
+            continue
+
         original_query_s = query_s
         query = []
         while True:
@@ -80,6 +85,11 @@ def query(queries, filter_data=False, strify=False):
             j_orig = json.loads(line)
 
         for query in queries:
+            # if it's a fake query, just print it
+            if isinstance(query, basestring):
+                print query,
+                continue
+
             # reparse the data if we are destructively modifying it:
             if filter_data:
                 j = json.loads(line)
