@@ -1,0 +1,50 @@
+#!/usr/bin/python
+
+"""
+Pipes a rolling window of stats to R.
+"""
+
+import sys
+import subprocess
+from optparse import OptionParser
+
+def main():
+    parser = OptionParser(usage="%prog [options]")
+    parser.add_option('-n', '--roll', dest='roll', type="int", default=0,
+            help="roll the data window over every n lines")
+    options, _args = parser.parse_args()
+
+    r_process = subprocess.Popen(['R', '--slave'], stdin=subprocess.PIPE)
+
+    def send_initialization_message(proc):
+        # start reading data from stdin
+        proc.stdin.write("myarray <- scan()\n")
+
+    def send_termination_message(proc):
+        # blank line, then summarize
+        proc.stdin.write("\nsummary(myarray)\n")
+
+    count = 0
+    send_initialization_message(r_process)
+    for line in sys.stdin:
+        r_process.stdin.write(line)
+
+        count += 1
+        if options.roll != 0:
+            if count % options.roll == 0:
+                # reinit
+                send_termination_message(r_process)
+                send_initialization_message(r_process)
+                count = 0
+
+    if count > 0:
+        send_termination_message(r_process)
+
+    # hang up the line and wait for R to terminate
+    r_process.stdin.close()
+    r_process.wait()
+
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main())
