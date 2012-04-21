@@ -97,6 +97,11 @@ def parse_queries(query_strs):
     # dictionary key. The second element " " " ", is an array index.
     queries = []
     for query_s in query_strs:
+        # detect fake queries:
+        if query_s[0] not in ('.', '['):
+            queries.append(query_s)
+            continue
+
         original_query_s = query_s
         query = []
         while True:
@@ -129,6 +134,14 @@ def query(queries, filter_data=False, strify=False):
         json_obj = json.loads(line)
 
         for query in queries:
+            # if it's a fake query, just print it
+            if isinstance(query, basestring):
+                print query,
+                continue
+
+            # set up query main evaluation loop:
+            # walk through the object according to the query,
+            # if filter_data=True, then build up a filtered object as well.
             tip = json_obj
             if filter_data:
                 filtered_obj = FilteredJSONObject()

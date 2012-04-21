@@ -1,3 +1,6 @@
+jsonq
+=====
+
 Get the information that you want out of JSON.
 
 For example, let's say you have a file with a ton of JSON, one JSON
@@ -78,9 +81,43 @@ $ echo '{"grr": {"hello": [5, 6]}, "snafu": [{"zzz": 6}, {"aaa": 5}]}' | ./jsonq
 {"grr": {"hello": [6]}}
 ````
 
-One last thing. Use -s/--str to coerce the result to a string instead of dumping JSON.
+Use -s/--str to coerce the result to a string instead of dumping JSON.
 
 ````bash
 $ echo '{"snarf": "narf zoop"}' | ./jsonq .snarf -s
 narf zoop
 ````
+
+"Queries" that don't start with . or [ are simply re-printed:
+
+````bash
+$ echo '{"snarf": [32.1, 488.5]}' | ./jsonq .snarf[0] + .snarf[1]
+32.1 + 488.5
+````
+
+See where this is going?
+
+jsonstats
+=========
+
+Takes in whitespace-delimited integers or floating-point numbers on stdin, outputs statistics for each column.
+
+````bash
+$ seq 1 10 | ./jsonstats
+Count: 10
+Mean:  5.5
+Min:   1.0
+25th:  3.0
+50th:  6.0
+75th:  8.0
+99th:  10.0
+Max:   10.0
+````
+
+This plays well with `jsonq` and `bc`:
+
+````bash
+$ tail_live_traffic_log | head -n 1000 | ./jsonq \( .end_time - .begin_time \) \* 1000 | bc | jsonstats
+````
+
+will subtract the "begin_time" field of your log from the "end_time", multiply by 1000 to convert seconds to milliseconds, and print statistics.
